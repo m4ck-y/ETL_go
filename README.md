@@ -1,1 +1,1 @@
-# ETL_go
+go run ./cmd/
