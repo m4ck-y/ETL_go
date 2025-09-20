@@ -1,1 +1,2 @@
-go run ./cmd/
+go mod tidy
+go run ./cmd
