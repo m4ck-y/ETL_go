@@ -9,6 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/m4ck-y/ETL_go/internal/infrastructure/api"
 	"github.com/m4ck-y/ETL_go/internal/infrastructure/repository"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "github.com/m4ck-y/ETL_go/docs" // importa la documentación generada
 )
 
 func main() {
@@ -23,6 +28,8 @@ func main() {
 	handler := &api.APIHandler{Repo: repo}
 
 	router := gin.Default()
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	//api.RegisterRoutes(router)
 	handler.RegisterRoutes(router)

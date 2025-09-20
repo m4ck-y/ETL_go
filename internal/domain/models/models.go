@@ -37,3 +37,15 @@ type AggregatedMetrics struct {
 	ClosedWon     int
 	Revenue       float64
 }
+
+type MetricResponse struct {
+	UTMCampaign   string  `json:"utm_campaign"`
+	UTMSource     string  `json:"utm_source"`
+	UTMMedium     string  `json:"utm_medium"`
+	Clicks        int     `json:"clicks"`
+	Cost          float64 `json:"cost"`
+	Leads         int     `json:"leads"`
+	Opportunities int     `json:"opportunities"`
+	ClosedWon     int     `json:"closed_won"`
+	Revenue       float64 `json:"revenue"`
+}

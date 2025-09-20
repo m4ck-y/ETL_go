@@ -1,0 +1,74 @@
+definitions:
+  models.MetricResponse:
+    properties:
+      clicks:
+        type: integer
+      closed_won:
+        type: integer
+      cost:
+        type: number
+      leads:
+        type: integer
+      opportunities:
+        type: integer
+      revenue:
+        type: number
+      utm_campaign:
+        type: string
+      utm_medium:
+        type: string
+      utm_source:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /ingest/run:
+    post:
+      consumes:
+      - application/json
+      description: Ejecuta un proceso ETL que extrae datos de ADS y CRM y guarda los
+        resultados.
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: ETL completado correctamente
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error interno del servidor
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Ejecuta el proceso ETL de ingestión
+      tags:
+      - ingest
+  /metrics:
+    get:
+      consumes:
+      - application/json
+      description: Retorna un listado de métricas con información de campañas, clics,
+        costo, leads y ventas.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de métricas
+          schema:
+            items:
+              $ref: '#/definitions/models.MetricResponse'
+            type: array
+        "500":
+          description: Error interno del servidor
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtiene métricas almacenadas
+      tags:
+      - metrics
+swagger: "2.0"

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/m4ck-y/ETL_go/internal/domain"
+	"github.com/m4ck-y/ETL_go/internal/domain/models"
 
 	"github.com/m4ck-y/ETL_go/internal/application"
 )
@@ -22,14 +22,21 @@ func (h *APIHandler) RegisterRoutes(router *gin.Engine) {
 	router.GET("/metrics", h.GetMetricsHandler)
 }
 
+// IngestHandler inicia el proceso ETL y guarda los resultados.
+// @Summary Ejecuta el proceso ETL de ingestión
+// @Description Ejecuta un proceso ETL que extrae datos de ADS y CRM y guarda los resultados.
+// @Tags ingest
+// @Accept json
+// @Produce json
+// @Success 201 {object} map[string]string "ETL completado correctamente"
+// @Failure 500 {object} map[string]string "Error interno del servidor"
+// @Router /ingest/run [post]
 func (h *APIHandler) IngestHandler(c *gin.Context) {
 	adsURL := os.Getenv("ADS_API_URL")
 	crmURL := os.Getenv("CRM_API_URL")
 
 	log.Println("adsURL:", adsURL)
-	fmt.Println("adsURL:", adsURL)
 	log.Println("crmURL:", crmURL)
-	fmt.Println("crmURL:", crmURL)
 
 	result, err := application.RunETL(adsURL, crmURL)
 	if err != nil {
@@ -45,6 +52,15 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"status": "ETL completed"})
 }
 
+// GetMetricsHandler obtiene todas las métricas almacenadas.
+// @Summary Obtiene métricas almacenadas
+// @Description Retorna un listado de métricas con información de campañas, clics, costo, leads y ventas.
+// @Tags metrics
+// @Accept json
+// @Produce json
+// @Success 200 {array} models.MetricResponse "Lista de métricas"
+// @Failure 500 {object} map[string]string "Error interno del servidor"
+// @Router /metrics [get]
 func (h *APIHandler) GetMetricsHandler(c *gin.Context) {
 	data, err := h.Repo.GetAll()
 	if err != nil {
@@ -53,18 +69,18 @@ func (h *APIHandler) GetMetricsHandler(c *gin.Context) {
 	}
 
 	// Transform map to slice for JSON serialization
-	var response []gin.H
+	var response []models.MetricResponse
 	for key, m := range data {
-		response = append(response, gin.H{
-			"utm_campaign":  key.Campaign,
-			"utm_source":    key.Source,
-			"utm_medium":    key.Medium,
-			"clicks":        m.Clicks,
-			"cost":          m.Cost,
-			"leads":         m.Leads,
-			"opportunities": m.Opportunities,
-			"closed_won":    m.ClosedWon,
-			"revenue":       m.Revenue,
+		response = append(response, models.MetricResponse{
+			UTMCampaign:   key.Campaign,
+			UTMSource:     key.Source,
+			UTMMedium:     key.Medium,
+			Clicks:        m.Clicks,
+			Cost:          m.Cost,
+			Leads:         m.Leads,
+			Opportunities: m.Opportunities,
+			ClosedWon:     m.ClosedWon,
+			Revenue:       m.Revenue,
 		})
 	}
 
