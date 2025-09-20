@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -29,7 +30,14 @@ func main() {
 
 	router := gin.Default()
 
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/swagger/*any", func(c *gin.Context) {
+		path := c.Request.URL.Path
+		if path == "/swagger" || path == "/swagger/" {
+			c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+			return
+		}
+		ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
+	})
 
 	//api.RegisterRoutes(router)
 	handler.RegisterRoutes(router)
