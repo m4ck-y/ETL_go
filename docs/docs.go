@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/ingest/run": {
             "post": {
-                "description": "Ejecuta un proceso ETL que extrae datos de ADS y CRM y guarda los resultados.",
+                "description": "Ejecuta un proceso ETL que extrae datos de ADS y CRM y guarda los resultados. Soporta filtrado por fecha con el parámetro 'since'.",
                 "consumes": [
                     "application/json"
                 ],
@@ -28,9 +28,26 @@ const docTemplate = `{
                     "ingest"
                 ],
                 "summary": "Ejecuta el proceso ETL de ingestión",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha desde la cual filtrar datos (YYYY-MM-DD)",
+                        "name": "since",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "ETL completado correctamente",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetro de fecha inválido",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {

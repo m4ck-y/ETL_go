@@ -28,12 +28,23 @@ paths:
       consumes:
       - application/json
       description: Ejecuta un proceso ETL que extrae datos de ADS y CRM y guarda los
-        resultados.
+        resultados. Soporta filtrado por fecha con el parámetro 'since'.
+      parameters:
+      - description: Fecha desde la cual filtrar datos (YYYY-MM-DD)
+        in: query
+        name: since
+        type: string
       produces:
       - application/json
       responses:
         "201":
           description: ETL completado correctamente
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Parámetro de fecha inválido
           schema:
             additionalProperties:
               type: string

@@ -7,13 +7,15 @@ import (
 )
 
 type InMemoryMetricsRepository struct {
-	data map[models.UTMKey]models.AggregatedMetrics
-	mu   sync.RWMutex
+	data             map[models.UTMKey]models.AggregatedMetrics
+	processedBatches map[string]bool
+	mu               sync.RWMutex
 }
 
 func NewInMemoryMetricsRepository() *InMemoryMetricsRepository {
 	return &InMemoryMetricsRepository{
-		data: make(map[models.UTMKey]models.AggregatedMetrics),
+		data:             make(map[models.UTMKey]models.AggregatedMetrics),
+		processedBatches: make(map[string]bool),
 	}
 }
 
@@ -48,5 +50,20 @@ func (r *InMemoryMetricsRepository) Clear() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.data = make(map[models.UTMKey]models.AggregatedMetrics)
+	r.processedBatches = make(map[string]bool)
+	return nil
+}
+
+func (r *InMemoryMetricsRepository) IsBatchProcessed(batchID string) (bool, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	processed, exists := r.processedBatches[batchID]
+	return processed && exists, nil
+}
+
+func (r *InMemoryMetricsRepository) MarkBatchProcessed(batchID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.processedBatches[batchID] = true
 	return nil
 }
