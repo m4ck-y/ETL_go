@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"time"
 
@@ -17,6 +18,50 @@ type retryConfig struct {
 	maxRetries int
 	baseDelay  time.Duration
 	maxDelay   time.Duration
+}
+
+// HTTPError representa un error HTTP con código de estado
+type HTTPError struct {
+	StatusCode int
+	Message    string
+}
+
+func (e HTTPError) Error() string {
+	return fmt.Sprintf("HTTP %d: %s", e.StatusCode, e.Message)
+}
+
+// isRetryableError determina si un error merece reintento
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Errores de red (conexión, DNS, timeout)
+	if netErr, ok := err.(net.Error); ok {
+		return netErr.Timeout() || netErr.Temporary()
+	}
+
+	// Errores HTTP específicos que merecen reintento
+	if httpErr, ok := err.(*HTTPError); ok {
+		switch httpErr.StatusCode {
+		case 408: // Request Timeout
+			return true
+		case 429: // Too Many Requests
+			return true
+		case 500: // Internal Server Error
+			return true
+		case 502: // Bad Gateway
+			return true
+		case 503: // Service Unavailable
+			return true
+		case 504: // Gateway Timeout
+			return true
+		default:
+			return false
+		}
+	}
+
+	return false
 }
 
 // retryHTTPRequest realiza petición HTTP con reintentos y backoff exponencial
@@ -33,6 +78,10 @@ func retryHTTPRequest(url string, config retryConfig) (*http.Response, error) {
 			cancel()
 			return nil, fmt.Errorf("error creating request: %w", err)
 		}
+
+		// Agregar headers estándar
+		req.Header.Set("User-Agent", "ETL-Service/1.0")
+		req.Header.Set("Accept", "application/json")
 
 		// Ejecutar petición
 		client := &http.Client{Timeout: 30 * time.Second}
@@ -51,8 +100,17 @@ func retryHTTPRequest(url string, config retryConfig) (*http.Response, error) {
 		if err != nil {
 			lastErr = err
 		} else {
-			lastErr = fmt.Errorf("HTTP %d", resp.StatusCode)
+			// Crear error HTTP estructurado
+			lastErr = &HTTPError{
+				StatusCode: resp.StatusCode,
+				Message:    resp.Status,
+			}
 			resp.Body.Close()
+		}
+
+		// Verificar si el error merece reintento
+		if !isRetryableError(lastErr) {
+			break // No reintentar errores no recuperables
 		}
 
 		// Calcular delay para siguiente intento
@@ -67,13 +125,14 @@ func retryHTTPRequest(url string, config retryConfig) (*http.Response, error) {
 				"attempt":     attempt + 1,
 				"max_retries": config.maxRetries + 1,
 				"delay":       delay.String(),
+				"url":         url,
 				"error":       lastErr.Error(),
 			})
 			time.Sleep(delay)
 		}
 	}
 
-	return nil, fmt.Errorf("falló después de %d intentos: %w", config.maxRetries+1, lastErr)
+	return nil, fmt.Errorf("request failed after %d attempts: %w", config.maxRetries+1, lastErr)
 }
 
 // fetchData realiza una petición HTTP con reintentos y parsea la respuesta JSON

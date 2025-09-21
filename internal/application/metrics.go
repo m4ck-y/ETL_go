@@ -12,12 +12,12 @@ func safeDivide(numerator, denominator float64) float64 {
 	return numerator / denominator
 }
 
-// CalculateDerivedMetrics calcula las métricas derivadas requeridas
+// CalculateDerivedMetrics calcula las métricas derivadas de CPC, CPA, CVR y ROAS
 func CalculateDerivedMetrics(agg models.AggregatedMetrics) (cpc, cpa, cvrLeadToOpp, cvrOppToWon, roas float64) {
-	// CPC = Cost Per Click = cost / clicks
+	// CPC = cost / clicks (proteger división por cero)
 	cpc = safeDivide(agg.Cost, float64(agg.Clicks))
 
-	// CPA = Cost Per Acquisition = cost / leads
+	// CPA = cost / leads (proteger división por cero)
 	cpa = safeDivide(agg.Cost, float64(agg.Leads))
 
 	// CVR Lead to Opportunity = opportunities / leads
@@ -26,7 +26,7 @@ func CalculateDerivedMetrics(agg models.AggregatedMetrics) (cpc, cpa, cvrLeadToO
 	// CVR Opportunity to Won = won / opportunities
 	cvrOppToWon = safeDivide(float64(agg.ClosedWon), float64(agg.Opportunities))
 
-	// ROAS = Return on Ad Spend = revenue / cost
+	// ROAS = revenue / cost
 	roas = safeDivide(agg.Revenue, agg.Cost)
 
 	return cpc, cpa, cvrLeadToOpp, cvrOppToWon, roas
