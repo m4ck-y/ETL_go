@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/m4ck-y/ETL_go/internal/infrastructure/api"
 	"github.com/m4ck-y/ETL_go/internal/infrastructure/repository"
+	"github.com/m4ck-y/ETL_go/internal/pkg/logger"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -22,7 +22,9 @@ func main() {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error al cargar variables de entorno,")
+		logger.GlobalLogger.Fatal("Error al cargar variables de entorno", "system", map[string]interface{}{
+			"error": err.Error(),
+		})
 	}
 
 	repo := repository.NewInMemoryMetricsRepository()
@@ -47,8 +49,13 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("[INFO] etl-go-service - Servidor escuchando en puerto: %s (request_id: system)", port)
+	logger.GlobalLogger.Info("Servidor escuchando", "system", map[string]interface{}{
+		"port": port,
+	})
 	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Error al iniciar el servidor: %v", err)
+		logger.GlobalLogger.Fatal("Error al iniciar el servidor", "system", map[string]interface{}{
+			"port":  port,
+			"error": err.Error(),
+		})
 	}
 }

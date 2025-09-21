@@ -2,11 +2,11 @@ package application
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/m4ck-y/ETL_go/internal/domain/models"
+	"github.com/m4ck-y/ETL_go/internal/pkg/logger"
 )
 
 // normalizeUTM normaliza y asigna valores por defecto a UTMs
@@ -57,7 +57,10 @@ func isRecordInDateRange(recordDateStr string, filterDate *time.Time) bool {
 	recordDate, err := parseRecordDate(recordDateStr)
 	if err != nil {
 		// Log de error de parsing de fecha
-		log.Printf("[ERROR] etl-go-service - Error parsing date %s: %v (request_id: system)", recordDateStr, err)
+		logger.GlobalLogger.Error("Error parsing date", "system", map[string]interface{}{
+			"date_string": recordDateStr,
+			"error":       err.Error(),
+		})
 		return false
 	}
 

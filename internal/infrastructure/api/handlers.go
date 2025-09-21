@@ -8,6 +8,7 @@ import (
 
 	"github.com/m4ck-y/ETL_go/internal/domain"
 	"github.com/m4ck-y/ETL_go/internal/domain/models"
+	"github.com/m4ck-y/ETL_go/internal/pkg/logger"
 
 	"github.com/m4ck-y/ETL_go/internal/application"
 )
@@ -32,7 +33,7 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 
 	// Validar configuración
 	if err := validateEnvironment(); err != nil {
-		AppLogger.Error("Configuración inválida", requestID, map[string]interface{}{
+		logger.GlobalLogger.Error("Configuración inválida", requestID, map[string]interface{}{
 			"error": err.Error(),
 		})
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -41,7 +42,7 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 
 	adsURL := os.Getenv("ADS_API_URL")
 	crmURL := os.Getenv("CRM_API_URL")
-	AppLogger.Info("Iniciando ETL con URLs configuradas", requestID, map[string]interface{}{
+	logger.GlobalLogger.Info("Iniciando ETL con URLs configuradas", requestID, map[string]interface{}{
 		"ads_url": adsURL,
 		"crm_url": crmURL,
 	})
@@ -50,7 +51,7 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 	sinceParam := c.Query("since")
 	sinceDate, err := parseSinceDate(sinceParam)
 	if err != nil {
-		AppLogger.Error("Error parseando fecha", requestID, map[string]interface{}{
+		logger.GlobalLogger.Error("Error parseando fecha", requestID, map[string]interface{}{
 			"since_param": sinceParam,
 			"error":       err.Error(),
 		})
@@ -59,14 +60,14 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 	}
 
 	if sinceDate != nil {
-		AppLogger.Info("Filtrando datos desde fecha", requestID, map[string]interface{}{
+		logger.GlobalLogger.Info("Filtrando datos desde fecha", requestID, map[string]interface{}{
 			"since_date": sinceParam,
 		})
 	}
 
 	// Generar ID único para el lote (idempotencia)
 	batchID := generateBatchID(adsURL, crmURL, sinceParam)
-	AppLogger.Info("ID de lote generado", requestID, map[string]interface{}{
+	logger.GlobalLogger.Info("ID de lote generado", requestID, map[string]interface{}{
 		"batch_id": batchID,
 	})
 
@@ -78,7 +79,7 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 	// Ejecutar proceso ETL
 	result, err := application.RunETL(adsURL, crmURL, sinceDate)
 	if err != nil {
-		AppLogger.Error("Proceso ETL falló", requestID, map[string]interface{}{
+		logger.GlobalLogger.Error("Proceso ETL falló", requestID, map[string]interface{}{
 			"batch_id": batchID,
 			"error":    err.Error(),
 		})
@@ -88,7 +89,7 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 
 	// Guardar resultados
 	if err := h.Repo.Save(result); err != nil {
-		AppLogger.Error("Error guardando resultados", requestID, map[string]interface{}{
+		logger.GlobalLogger.Error("Error guardando resultados", requestID, map[string]interface{}{
 			"batch_id": batchID,
 			"error":    err.Error(),
 		})
@@ -99,7 +100,7 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 	// Marcar lote como procesado
 	h.markBatchAsProcessed(batchID)
 
-	AppLogger.Info("ETL completado exitosamente", requestID, map[string]interface{}{
+	logger.GlobalLogger.Info("ETL completado exitosamente", requestID, map[string]interface{}{
 		"batch_id":               batchID,
 		"processed_combinations": len(result),
 	})

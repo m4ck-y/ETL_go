@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"net/http"
 	"time"
+
+	"github.com/m4ck-y/ETL_go/internal/pkg/logger"
 )
 
 // Configuración para reintentos HTTP
@@ -58,8 +59,12 @@ func retryHTTPRequest(url string, config retryConfig) (*http.Response, error) {
 			}
 
 			// Log de reintento con información estructurada
-			log.Printf("[WARN] etl-go-service - HTTP request failed, retrying (attempt: %d/%d, delay: %v, error: %v) (request_id: system)",
-				attempt+1, config.maxRetries+1, delay, lastErr)
+			logger.GlobalLogger.Warn("HTTP request failed, retrying", "system", map[string]interface{}{
+				"attempt":     attempt + 1,
+				"max_retries": config.maxRetries + 1,
+				"delay":       delay.String(),
+				"error":       lastErr.Error(),
+			})
 			time.Sleep(delay)
 		}
 	}
