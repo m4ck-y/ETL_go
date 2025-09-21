@@ -24,13 +24,13 @@ func retryHTTPRequest(url string, config retryConfig) (*http.Response, error) {
 	var lastErr error
 
 	for attempt := 0; attempt <= config.maxRetries; attempt++ {
-		// Crear contexto con timeout
+		// Crear contexto con timeout para esta iteración
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel() // Asegurar que se cancele al final
 
 		// Crear petición HTTP
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
+			cancel()
 			return nil, fmt.Errorf("error creating request: %w", err)
 		}
 
@@ -40,8 +40,12 @@ func retryHTTPRequest(url string, config retryConfig) (*http.Response, error) {
 
 		// Verificar respuesta exitosa
 		if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			cancel() // Cancelar contexto antes de retornar
 			return resp, nil
 		}
+
+		// Cancelar contexto para esta iteración
+		cancel()
 
 		// Manejar error
 		if err != nil {

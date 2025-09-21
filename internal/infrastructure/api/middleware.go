@@ -45,18 +45,6 @@ func RequestIDMiddleware() gin.HandlerFunc {
 				"ip":     c.ClientIP(),
 			})
 		}
-
-		if status >= 400 {
-			logger.GlobalLogger.Error("Request completed", requestID, map[string]interface{}{
-				"status": status,
-				"ip":     c.ClientIP(),
-			})
-		} else {
-			logger.GlobalLogger.Info("Request completed", requestID, map[string]interface{}{
-				"status": status,
-				"ip":     c.ClientIP(),
-			})
-		}
 	}
 }
 

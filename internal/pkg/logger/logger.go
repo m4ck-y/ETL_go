@@ -1,7 +1,9 @@
 package logger
 
 import (
+	"encoding/json"
 	"log"
+	"time"
 )
 
 // LogLevel representa el nivel de logging
@@ -13,6 +15,16 @@ const (
 	WARN  LogLevel = "WARN"
 	FATAL LogLevel = "FATAL"
 )
+
+// StructuredLog representa una entrada de log estructurada
+type StructuredLog struct {
+	Timestamp string                 `json:"timestamp"`
+	Level     LogLevel               `json:"level"`
+	Service   string                 `json:"service"`
+	Message   string                 `json:"message"`
+	RequestID string                 `json:"request_id,omitempty"`
+	Extra     map[string]interface{} `json:"extra,omitempty"`
+}
 
 // Logger es el logger global del sistema
 type Logger struct {
@@ -26,13 +38,28 @@ func NewLogger(serviceName string) *Logger {
 	}
 }
 
-// log escribe una entrada de log estructurada
+// log escribe una entrada de log estructurada en formato JSON
 func (l *Logger) log(level LogLevel, message string, requestID string, extra map[string]interface{}) {
-	// Salida simple estructurada
-	log.Printf("[%s] %s - %s (request_id: %s)", level, l.serviceName, message, requestID)
-	if extra != nil && len(extra) > 0 {
-		log.Printf("Extra: %+v", extra)
+	// Crear entrada de log estructurada
+	logEntry := StructuredLog{
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Level:     level,
+		Service:   l.serviceName,
+		Message:   message,
+		RequestID: requestID,
+		Extra:     extra,
 	}
+
+	// Convertir a JSON y escribir
+	jsonData, err := json.Marshal(logEntry)
+	if err != nil {
+		// Fallback si falla el JSON
+		log.Printf("[ERROR] %s - Failed to marshal log entry: %v", l.serviceName, err)
+		return
+	}
+
+	// Escribir JSON estructurado
+	log.Println(string(jsonData))
 }
 
 // Info escribe un log de nivel INFO
