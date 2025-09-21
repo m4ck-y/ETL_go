@@ -48,10 +48,10 @@ type MetricResponse struct {
 	Opportunities int     `json:"opportunities"`
 	ClosedWon     int     `json:"closed_won"`
 	Revenue       float64 `json:"revenue"`
-	// Métricas calculadas
-	CPC          float64 `json:"cpc"`             // Cost Per Click = cost / clicks
-	CPA          float64 `json:"cpa"`             // Cost Per Acquisition = cost / leads
-	CVRLeadToOpp float64 `json:"cvr_lead_to_opp"` // Conversion Rate Lead to Opportunity
-	CVROppToWon  float64 `json:"cvr_opp_to_won"`  // Conversion Rate Opportunity to Won
-	ROAS         float64 `json:"roas"`            // Return on Ad Spend = revenue / cost
+	// Métricas adicionales calculadas automáticamente a partir de los datos principales
+	CPC          float64 `json:"cpc"`             // Cost por click = cost / clicks
+	CPA          float64 `json:"cpa"`             // Cost por adquisición = cost / leads
+	CVRLeadToOpp float64 `json:"cvr_lead_to_opp"` // Tasa de conversión de Lead a Opportunity
+	CVROppToWon  float64 `json:"cvr_opp_to_won"`  // Tasa de conversión de Opportunity a ClosedWon
+	ROAS         float64 `json:"roas"`            // Retorno de inversión publicitaria = revenue / cost
 }

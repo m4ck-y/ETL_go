@@ -44,7 +44,6 @@ func validateEnvironment() error {
 	return nil
 }
 
-// parseDateRange parsea parámetros de fecha from/to
 func parseDateRange(fromParam, toParam string) (*time.Time, *time.Time, error) {
 	var fromDate, toDate *time.Time
 
@@ -67,7 +66,6 @@ func parseDateRange(fromParam, toParam string) (*time.Time, *time.Time, error) {
 	return fromDate, toDate, nil
 }
 
-// filterMetricsByChannel filtra métricas por canal específico
 func filterMetricsByChannel(metrics []models.MetricResponse, channel string) []models.MetricResponse {
 	if channel == "" {
 		return metrics
@@ -75,6 +73,7 @@ func filterMetricsByChannel(metrics []models.MetricResponse, channel string) []m
 
 	var filtered []models.MetricResponse
 	for _, m := range metrics {
+		// TODO:
 		// Aquí necesitaríamos tener el campo channel en los datos
 		// Por ahora, filtramos por UTM source que podría indicar el canal
 		if strings.Contains(strings.ToLower(m.UTMSource), strings.ToLower(channel)) {
@@ -84,7 +83,6 @@ func filterMetricsByChannel(metrics []models.MetricResponse, channel string) []m
 	return filtered
 }
 
-// filterMetricsByCampaign filtra métricas por campaña específica
 func filterMetricsByCampaign(metrics []models.MetricResponse, campaign string) []models.MetricResponse {
 	if campaign == "" {
 		return metrics
@@ -99,7 +97,6 @@ func filterMetricsByCampaign(metrics []models.MetricResponse, campaign string) [
 	return filtered
 }
 
-// paginateMetrics aplica paginación simple a las métricas
 func paginateMetrics(metrics []models.MetricResponse, limit, offset int) []models.MetricResponse {
 	if offset >= len(metrics) {
 		return []models.MetricResponse{}

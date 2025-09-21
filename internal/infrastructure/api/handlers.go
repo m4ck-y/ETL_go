@@ -31,7 +31,6 @@ type APIHandler struct {
 func (h *APIHandler) IngestHandler(c *gin.Context) {
 	requestID := GetRequestID(c)
 
-	// Validar configuración
 	if err := validateEnvironment(); err != nil {
 		logger.GlobalLogger.Error("Configuración inválida", requestID, map[string]interface{}{
 			"error": err.Error(),
@@ -47,7 +46,6 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 		"crm_url": crmURL,
 	})
 
-	// Parsear parámetro opcional de fecha
 	sinceParam := c.Query("since")
 	sinceDate, err := parseSinceDate(sinceParam)
 	if err != nil {
@@ -65,18 +63,15 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 		})
 	}
 
-	// Generar ID único para el lote (idempotencia)
 	batchID := generateBatchID(adsURL, crmURL, sinceParam)
 	logger.GlobalLogger.Info("ID de lote generado", requestID, map[string]interface{}{
 		"batch_id": batchID,
 	})
 
-	// Verificar si el lote ya fue procesado
 	if h.isBatchAlreadyProcessed(c, batchID) {
 		return
 	}
 
-	// Ejecutar proceso ETL
 	result, err := application.RunETL(adsURL, crmURL, sinceDate)
 	if err != nil {
 		logger.GlobalLogger.Error("Proceso ETL falló", requestID, map[string]interface{}{
@@ -87,7 +82,6 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 		return
 	}
 
-	// Guardar resultados
 	if err := h.Repo.Save(result); err != nil {
 		logger.GlobalLogger.Error("Error guardando resultados", requestID, map[string]interface{}{
 			"batch_id": batchID,
@@ -97,7 +91,6 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 		return
 	}
 
-	// Marcar lote como procesado
 	h.markBatchAsProcessed(batchID)
 
 	logger.GlobalLogger.Info("ETL completado exitosamente", requestID, map[string]interface{}{
@@ -122,16 +115,19 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Error interno del servidor"
 // @Router /metrics [get]
 func (h *APIHandler) GetMetricsHandler(c *gin.Context) {
+	requestID := GetRequestID(c)
+
 	data, err := h.Repo.GetAll()
 	if err != nil {
+		logger.GlobalLogger.Error("Error obteniendo métricas", requestID, map[string]interface{}{
+			"error": err.Error(),
+		})
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get metrics"})
 		return
 	}
 
-	// Transform map to slice for JSON serialization con métricas calculadas
 	var response []models.MetricResponse
 	for key, m := range data {
-		// Calcular métricas derivadas
 		cpc, cpa, cvrLeadToOpp, cvrOppToWon, roas := application.CalculateDerivedMetrics(m)
 
 		response = append(response, models.MetricResponse{
@@ -144,14 +140,47 @@ func (h *APIHandler) GetMetricsHandler(c *gin.Context) {
 			Opportunities: m.Opportunities,
 			ClosedWon:     m.ClosedWon,
 			Revenue:       m.Revenue,
-			// Métricas calculadas
-			CPC:          cpc,
-			CPA:          cpa,
-			CVRLeadToOpp: cvrLeadToOpp,
-			CVROppToWon:  cvrOppToWon,
-			ROAS:         roas,
+			CPC:           cpc,
+			CPA:           cpa,
+			CVRLeadToOpp:  cvrLeadToOpp,
+			CVROppToWon:   cvrOppToWon,
+			ROAS:          roas,
 		})
 	}
 
+	logger.GlobalLogger.Info("Métricas obtenidas exitosamente", requestID, map[string]interface{}{
+		"total_metrics": len(response),
+	})
+
 	c.JSON(http.StatusOK, response)
+}
+
+// ResetHandler limpia todos los datos almacenados en memoria.
+// @Summary Resetea todos los datos almacenados
+// @Description Limpia completamente la base de datos en memoria, eliminando todas las métricas y lotes procesados.
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string "Datos reseteados correctamente"
+// @Failure 500 {object} map[string]string "Error interno del servidor"
+// @Router /admin/reset [post]
+func (h *APIHandler) ResetHandler(c *gin.Context) {
+	requestID := GetRequestID(c)
+
+	logger.GlobalLogger.Info("Iniciando reset de datos", requestID, nil)
+
+	if err := h.Repo.Clear(); err != nil {
+		logger.GlobalLogger.Error("Error reseteando datos", requestID, map[string]interface{}{
+			"error": err.Error(),
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset data", "details": err.Error()})
+		return
+	}
+
+	logger.GlobalLogger.Info("Datos reseteados exitosamente", requestID, nil)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "Data reset successfully",
+		"message": "All stored metrics and batch data have been cleared",
+	})
 }
