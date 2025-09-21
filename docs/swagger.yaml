@@ -23,6 +23,8 @@ definitions:
     type: object
   models.MetricResponse:
     properties:
+      channel:
+        type: string
       clicks:
         type: integer
       closed_won:
@@ -30,16 +32,17 @@ definitions:
       cost:
         type: number
       cpa:
-        description: Cost Per Acquisition = cost / leads
+        description: Cost por adquisición = cost / leads
         type: number
       cpc:
-        description: Métricas calculadas
+        description: Métricas adicionales calculadas automáticamente a partir de los
+          datos principales
         type: number
       cvr_lead_to_opp:
-        description: Conversion Rate Lead to Opportunity
+        description: Tasa de conversión de Lead a Opportunity
         type: number
       cvr_opp_to_won:
-        description: Conversion Rate Opportunity to Won
+        description: Tasa de conversión de Opportunity a ClosedWon
         type: number
       leads:
         type: integer
@@ -48,7 +51,7 @@ definitions:
       revenue:
         type: number
       roas:
-        description: Return on Ad Spend = revenue / cost
+        description: Retorno de inversión publicitaria = revenue / cost
         type: number
       utm_campaign:
         type: string
@@ -60,6 +63,30 @@ definitions:
 info:
   contact: {}
 paths:
+  /admin/reset:
+    post:
+      consumes:
+      - application/json
+      description: Limpia completamente la base de datos en memoria, eliminando todas
+        las métricas y lotes procesados.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Datos reseteados correctamente
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error interno del servidor
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resetea todos los datos almacenados
+      tags:
+      - admin
   /healthz:
     get:
       consumes:

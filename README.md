@@ -53,4 +53,9 @@ Despues acceder a: http://localhost:8080/swagger/index.html
 ### Despliegue
 Desplegado en Google Cloud Run vinculado directamente con el repositorio de GitHub.
 
+![Configuración GCP](https://storage.googleapis.com/etl_go/config_gcp_run.png)
+
 URL en GCP: https://etl-go-967885369144.europe-west1.run.app/swagger
+
+
+![Swagger UI](https://storage.googleapis.com/etl_go/swagger.png)

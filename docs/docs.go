@@ -15,6 +15,41 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/reset": {
+            "post": {
+                "description": "Limpia completamente la base de datos en memoria, eliminando todas las métricas y lotes procesados.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Resetea todos los datos almacenados",
+                "responses": {
+                    "200": {
+                        "description": "Datos reseteados correctamente",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/healthz": {
             "get": {
                 "description": "Verifica que el servicio esté funcionando",
@@ -331,6 +366,9 @@ const docTemplate = `{
         "models.MetricResponse": {
             "type": "object",
             "properties": {
+                "channel": {
+                    "type": "string"
+                },
                 "clicks": {
                     "type": "integer"
                 },
@@ -341,19 +379,19 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "cpa": {
-                    "description": "Cost Per Acquisition = cost / leads",
+                    "description": "Cost por adquisición = cost / leads",
                     "type": "number"
                 },
                 "cpc": {
-                    "description": "Métricas calculadas",
+                    "description": "Métricas adicionales calculadas automáticamente a partir de los datos principales",
                     "type": "number"
                 },
                 "cvr_lead_to_opp": {
-                    "description": "Conversion Rate Lead to Opportunity",
+                    "description": "Tasa de conversión de Lead a Opportunity",
                     "type": "number"
                 },
                 "cvr_opp_to_won": {
-                    "description": "Conversion Rate Opportunity to Won",
+                    "description": "Tasa de conversión de Opportunity a ClosedWon",
                     "type": "number"
                 },
                 "leads": {
@@ -366,7 +404,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "roas": {
-                    "description": "Return on Ad Spend = revenue / cost",
+                    "description": "Retorno de inversión publicitaria = revenue / cost",
                     "type": "number"
                 },
                 "utm_campaign": {
