@@ -131,6 +131,7 @@ func (h *APIHandler) GetMetricsHandler(c *gin.Context) {
 		cpc, cpa, cvrLeadToOpp, cvrOppToWon, roas := application.CalculateDerivedMetrics(m)
 
 		response = append(response, models.MetricResponse{
+			Channel:       m.Channel,
 			UTMCampaign:   key.Campaign,
 			UTMSource:     key.Source,
 			UTMMedium:     key.Medium,

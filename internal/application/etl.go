@@ -17,6 +17,10 @@ func processAdsMetrics(ads []models.AdRecord, sinceDate *time.Time, metrics map[
 
 		key := BuildUTMKey(ad.UTMCampaign, ad.UTMSource, ad.UTMMedium)
 		m := metrics[key]
+		// Capturar el canal del primer registro (todos los registros de la misma UTM deberían tener el mismo canal)
+		if m.Channel == "" {
+			m.Channel = ad.Channel
+		}
 		m.Clicks += ad.Clicks
 		m.Cost += ad.Cost
 		metrics[key] = m

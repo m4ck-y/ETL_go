@@ -73,10 +73,8 @@ func filterMetricsByChannel(metrics []models.MetricResponse, channel string) []m
 
 	var filtered []models.MetricResponse
 	for _, m := range metrics {
-		// TODO:
-		// Aquí necesitaríamos tener el campo channel en los datos
-		// Por ahora, filtramos por UTM source que podría indicar el canal
-		if strings.Contains(strings.ToLower(m.UTMSource), strings.ToLower(channel)) {
+		// Filtrar por el campo channel específico
+		if strings.Contains(strings.ToLower(m.Channel), strings.ToLower(channel)) {
 			filtered = append(filtered, m)
 		}
 	}

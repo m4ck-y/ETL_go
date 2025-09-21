@@ -30,6 +30,7 @@ type UTMKey struct {
 }
 
 type AggregatedMetrics struct {
+	Channel       string
 	Clicks        int
 	Cost          float64
 	Leads         int
@@ -39,6 +40,7 @@ type AggregatedMetrics struct {
 }
 
 type MetricResponse struct {
+	Channel       string  `json:"channel"`
 	UTMCampaign   string  `json:"utm_campaign"`
 	UTMSource     string  `json:"utm_source"`
 	UTMMedium     string  `json:"utm_medium"`
