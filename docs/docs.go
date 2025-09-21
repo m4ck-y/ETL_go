@@ -69,7 +69,7 @@ const docTemplate = `{
         },
         "/metrics": {
             "get": {
-                "description": "Retorna un listado de métricas con información de campañas, clics, costo, leads y ventas.",
+                "description": "Retorna un listado de métricas con información de campañas, clics, costo, leads, ventas y métricas calculadas (CPC, CPA, CVR, ROAS).",
                 "consumes": [
                     "application/json"
                 ],
@@ -79,10 +79,10 @@ const docTemplate = `{
                 "tags": [
                     "metrics"
                 ],
-                "summary": "Obtiene métricas almacenadas",
+                "summary": "Obtiene métricas almacenadas con cálculos derivados",
                 "responses": {
                     "200": {
-                        "description": "Lista de métricas",
+                        "description": "Lista de métricas con cálculos incluidos",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -116,6 +116,22 @@ const docTemplate = `{
                 "cost": {
                     "type": "number"
                 },
+                "cpa": {
+                    "description": "Cost Per Acquisition = cost / leads",
+                    "type": "number"
+                },
+                "cpc": {
+                    "description": "Métricas calculadas",
+                    "type": "number"
+                },
+                "cvr_lead_to_opp": {
+                    "description": "Conversion Rate Lead to Opportunity",
+                    "type": "number"
+                },
+                "cvr_opp_to_won": {
+                    "description": "Conversion Rate Opportunity to Won",
+                    "type": "number"
+                },
                 "leads": {
                     "type": "integer"
                 },
@@ -123,6 +139,10 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "revenue": {
+                    "type": "number"
+                },
+                "roas": {
+                    "description": "Return on Ad Spend = revenue / cost",
                     "type": "number"
                 },
                 "utm_campaign": {

@@ -1,0 +1,133 @@
+package api
+
+import (
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/m4ck-y/ETL_go/internal/domain"
+	"github.com/m4ck-y/ETL_go/internal/domain/models"
+
+	"github.com/m4ck-y/ETL_go/internal/application"
+)
+
+type APIHandler struct {
+	Repo domain.MetricsRepository
+}
+
+// IngestHandler inicia el proceso ETL y guarda los resultados.
+// @Summary Ejecuta el proceso ETL de ingestión
+// @Description Ejecuta un proceso ETL que extrae datos de ADS y CRM y guarda los resultados. Soporta filtrado por fecha con el parámetro 'since'.
+// @Tags ingest
+// @Accept json
+// @Produce json
+// @Param since query string false "Fecha desde la cual filtrar datos (YYYY-MM-DD)"
+// @Success 201 {object} map[string]string "ETL completado correctamente"
+// @Failure 400 {object} map[string]string "Parámetro de fecha inválido"
+// @Failure 500 {object} map[string]string "Error interno del servidor"
+// @Router /ingest/run [post]
+func (h *APIHandler) IngestHandler(c *gin.Context) {
+	// Validar configuración
+	if err := validateEnvironment(); err != nil {
+		log.Printf("Configuración inválida: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	adsURL := os.Getenv("ADS_API_URL")
+	crmURL := os.Getenv("CRM_API_URL")
+	log.Printf("Iniciando ETL con URLs configuradas")
+
+	// Parsear parámetro opcional de fecha
+	sinceParam := c.Query("since")
+	sinceDate, err := parseSinceDate(sinceParam)
+	if err != nil {
+		log.Printf("Error parseando fecha: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if sinceDate != nil {
+		log.Printf("Filtrando datos desde: %s", sinceParam)
+	}
+
+	// Generar ID único para el lote (idempotencia)
+	batchID := generateBatchID(adsURL, crmURL, sinceParam)
+	log.Printf("ID de lote generado: %s", batchID)
+
+	// Verificar si el lote ya fue procesado
+	if h.isBatchAlreadyProcessed(c, batchID) {
+		return
+	}
+
+	// Ejecutar proceso ETL
+	result, err := application.RunETL(adsURL, crmURL, sinceDate)
+	if err != nil {
+		log.Printf("Proceso ETL falló: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ETL failed", "details": err.Error()})
+		return
+	}
+
+	// Guardar resultados
+	if err := h.Repo.Save(result); err != nil {
+		log.Printf("Error guardando resultados: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save ETL results", "details": err.Error()})
+		return
+	}
+
+	// Marcar lote como procesado
+	h.markBatchAsProcessed(batchID)
+
+	log.Printf("ETL completado exitosamente. %d combinaciones UTM procesadas", len(result))
+	c.JSON(http.StatusCreated, gin.H{
+		"status":                 "ETL completed",
+		"processed_combinations": len(result),
+		"batch_id":               batchID,
+	})
+}
+
+// GetMetricsHandler obtiene todas las métricas almacenadas.
+// @Summary Obtiene métricas almacenadas con cálculos derivados
+// @Description Retorna un listado de métricas con información de campañas, clics, costo, leads, ventas y métricas calculadas (CPC, CPA, CVR, ROAS).
+// @Tags metrics
+// @Accept json
+// @Produce json
+// @Success 200 {array} models.MetricResponse "Lista de métricas con cálculos incluidos"
+// @Failure 500 {object} map[string]string "Error interno del servidor"
+// @Router /metrics [get]
+func (h *APIHandler) GetMetricsHandler(c *gin.Context) {
+	data, err := h.Repo.GetAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get metrics"})
+		return
+	}
+
+	// Transform map to slice for JSON serialization con métricas calculadas
+	var response []models.MetricResponse
+	for key, m := range data {
+		// Calcular métricas derivadas
+		cpc, cpa, cvrLeadToOpp, cvrOppToWon, roas := application.CalculateDerivedMetrics(m)
+
+		response = append(response, models.MetricResponse{
+			UTMCampaign:   key.Campaign,
+			UTMSource:     key.Source,
+			UTMMedium:     key.Medium,
+			Clicks:        m.Clicks,
+			Cost:          m.Cost,
+			Leads:         m.Leads,
+			Opportunities: m.Opportunities,
+			ClosedWon:     m.ClosedWon,
+			Revenue:       m.Revenue,
+			// Métricas calculadas
+			CPC:          cpc,
+			CPA:          cpa,
+			CVRLeadToOpp: cvrLeadToOpp,
+			CVROppToWon:  cvrOppToWon,
+			ROAS:         roas,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
+}
