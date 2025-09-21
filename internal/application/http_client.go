@@ -25,18 +25,17 @@ func retryHTTPRequest(url string, config retryConfig) (*http.Response, error) {
 	for attempt := 0; attempt <= config.maxRetries; attempt++ {
 		// Crear contexto con timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel() // Asegurar que se cancele al final
 
 		// Crear petición HTTP
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
-			cancel()
 			return nil, fmt.Errorf("error creating request: %w", err)
 		}
 
 		// Ejecutar petición
 		client := &http.Client{Timeout: 30 * time.Second}
 		resp, err := client.Do(req)
-		cancel() // Liberar contexto
 
 		// Verificar respuesta exitosa
 		if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
@@ -58,7 +57,8 @@ func retryHTTPRequest(url string, config retryConfig) (*http.Response, error) {
 				delay = config.maxDelay
 			}
 
-			log.Printf("Intento %d/%d falló, reintentando en %v: %v",
+			// Log de reintento con información estructurada
+			log.Printf("[WARN] etl-go-service - HTTP request failed, retrying (attempt: %d/%d, delay: %v, error: %v) (request_id: system)",
 				attempt+1, config.maxRetries+1, delay, lastErr)
 			time.Sleep(delay)
 		}

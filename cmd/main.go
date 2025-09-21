@@ -47,7 +47,7 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("Servidor escuchando en puerto: %s", port)
+	log.Printf("[INFO] etl-go-service - Servidor escuchando en puerto: %s (request_id: system)", port)
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Error al iniciar el servidor: %v", err)
 	}

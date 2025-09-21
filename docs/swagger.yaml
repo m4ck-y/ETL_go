@@ -1,4 +1,26 @@
 definitions:
+  api.HealthResponse:
+    properties:
+      service:
+        type: string
+      status:
+        type: string
+      time:
+        type: string
+    type: object
+  api.ReadinessResponse:
+    properties:
+      checks:
+        additionalProperties:
+          type: string
+        type: object
+      service:
+        type: string
+      status:
+        type: string
+      time:
+        type: string
+    type: object
   models.MetricResponse:
     properties:
       clicks:
@@ -38,6 +60,21 @@ definitions:
 info:
   contact: {}
 paths:
+  /healthz:
+    get:
+      consumes:
+      - application/json
+      description: Verifica que el servicio esté funcionando
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.HealthResponse'
+      summary: Health check básico
+      tags:
+      - health
   /ingest/run:
     post:
       consumes:
@@ -97,4 +134,117 @@ paths:
       summary: Obtiene métricas almacenadas con cálculos derivados
       tags:
       - metrics
+  /metrics/channel:
+    get:
+      consumes:
+      - application/json
+      description: Retorna métricas filtradas por canal con soporte para fechas y
+        paginación
+      parameters:
+      - description: Fecha desde (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: Fecha hasta (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      - description: Canal específico
+        in: query
+        name: channel
+        type: string
+      - default: 50
+        description: Límite de resultados
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset para paginación
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.MetricResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtiene métricas por canal
+      tags:
+      - metrics
+  /metrics/funnel:
+    get:
+      consumes:
+      - application/json
+      description: Retorna métricas de conversión filtradas por campaña con soporte
+        para fechas y paginación
+      parameters:
+      - description: Fecha desde (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: Fecha hasta (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      - description: Campaña específica
+        in: query
+        name: utm_campaign
+        type: string
+      - default: 50
+        description: Límite de resultados
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset para paginación
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.MetricResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtiene métricas de funnel por campaña
+      tags:
+      - metrics
+  /readyz:
+    get:
+      consumes:
+      - application/json
+      description: Verifica que el servicio esté listo para recibir tráfico
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ReadinessResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/api.ReadinessResponse'
+      summary: Readiness check
+      tags:
+      - health
 swagger: "2.0"

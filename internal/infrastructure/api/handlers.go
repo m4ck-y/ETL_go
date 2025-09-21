@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"os"
 
@@ -29,33 +28,47 @@ type APIHandler struct {
 // @Failure 500 {object} map[string]string "Error interno del servidor"
 // @Router /ingest/run [post]
 func (h *APIHandler) IngestHandler(c *gin.Context) {
+	requestID := GetRequestID(c)
+
 	// Validar configuración
 	if err := validateEnvironment(); err != nil {
-		log.Printf("Configuración inválida: %v", err)
+		AppLogger.Error("Configuración inválida", requestID, map[string]interface{}{
+			"error": err.Error(),
+		})
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	adsURL := os.Getenv("ADS_API_URL")
 	crmURL := os.Getenv("CRM_API_URL")
-	log.Printf("Iniciando ETL con URLs configuradas")
+	AppLogger.Info("Iniciando ETL con URLs configuradas", requestID, map[string]interface{}{
+		"ads_url": adsURL,
+		"crm_url": crmURL,
+	})
 
 	// Parsear parámetro opcional de fecha
 	sinceParam := c.Query("since")
 	sinceDate, err := parseSinceDate(sinceParam)
 	if err != nil {
-		log.Printf("Error parseando fecha: %v", err)
+		AppLogger.Error("Error parseando fecha", requestID, map[string]interface{}{
+			"since_param": sinceParam,
+			"error":       err.Error(),
+		})
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	if sinceDate != nil {
-		log.Printf("Filtrando datos desde: %s", sinceParam)
+		AppLogger.Info("Filtrando datos desde fecha", requestID, map[string]interface{}{
+			"since_date": sinceParam,
+		})
 	}
 
 	// Generar ID único para el lote (idempotencia)
 	batchID := generateBatchID(adsURL, crmURL, sinceParam)
-	log.Printf("ID de lote generado: %s", batchID)
+	AppLogger.Info("ID de lote generado", requestID, map[string]interface{}{
+		"batch_id": batchID,
+	})
 
 	// Verificar si el lote ya fue procesado
 	if h.isBatchAlreadyProcessed(c, batchID) {
@@ -65,14 +78,20 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 	// Ejecutar proceso ETL
 	result, err := application.RunETL(adsURL, crmURL, sinceDate)
 	if err != nil {
-		log.Printf("Proceso ETL falló: %v", err)
+		AppLogger.Error("Proceso ETL falló", requestID, map[string]interface{}{
+			"batch_id": batchID,
+			"error":    err.Error(),
+		})
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ETL failed", "details": err.Error()})
 		return
 	}
 
 	// Guardar resultados
 	if err := h.Repo.Save(result); err != nil {
-		log.Printf("Error guardando resultados: %v", err)
+		AppLogger.Error("Error guardando resultados", requestID, map[string]interface{}{
+			"batch_id": batchID,
+			"error":    err.Error(),
+		})
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save ETL results", "details": err.Error()})
 		return
 	}
@@ -80,7 +99,11 @@ func (h *APIHandler) IngestHandler(c *gin.Context) {
 	// Marcar lote como procesado
 	h.markBatchAsProcessed(batchID)
 
-	log.Printf("ETL completado exitosamente. %d combinaciones UTM procesadas", len(result))
+	AppLogger.Info("ETL completado exitosamente", requestID, map[string]interface{}{
+		"batch_id":               batchID,
+		"processed_combinations": len(result),
+	})
+
 	c.JSON(http.StatusCreated, gin.H{
 		"status":                 "ETL completed",
 		"processed_combinations": len(result),

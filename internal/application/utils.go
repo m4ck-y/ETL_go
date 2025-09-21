@@ -56,7 +56,8 @@ func isRecordInDateRange(recordDateStr string, filterDate *time.Time) bool {
 
 	recordDate, err := parseRecordDate(recordDateStr)
 	if err != nil {
-		log.Printf("Error parsing date %s: %v", recordDateStr, err)
+		// Log de error de parsing de fecha
+		log.Printf("[ERROR] etl-go-service - Error parsing date %s: %v (request_id: system)", recordDateStr, err)
 		return false
 	}
 
