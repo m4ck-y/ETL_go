@@ -18,13 +18,16 @@ import (
 )
 
 func main() {
-	//application.Saludar()
-
 	err := godotenv.Load()
 	if err != nil {
-		logger.GlobalLogger.Fatal("Error al cargar variables de entorno", "system", map[string]interface{}{
-			"error": err.Error(),
-		})
+		if !os.IsNotExist(err) {
+			logger.GlobalLogger.Warn("Error al cargar variables de entorno", "system", map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+		logger.GlobalLogger.Info("Variables de entorno cargadas desde Docker", "system", nil)
+	} else {
+		logger.GlobalLogger.Info("Variables de entorno cargadas desde .env", "system", nil)
 	}
 
 	repo := repository.NewInMemoryMetricsRepository()
@@ -41,7 +44,6 @@ func main() {
 		ginSwagger.WrapHandler(swaggerFiles.Handler)(c)
 	})
 
-	//api.RegisterRoutes(router)
 	handler.RegisterRoutes(router)
 
 	port := os.Getenv("PORT")

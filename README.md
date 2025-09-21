@@ -1,6 +1,6 @@
 # ETL Go Service
 
-Servicio que extrae datos de APIs de Ads y CRM, los procesa y calcula metricas de negocio.
+Servicio ETL que extrae datos de Ads y CRM, calcula métricas de negocio.
 
 ## Setup
 
@@ -8,6 +8,15 @@ Servicio que extrae datos de APIs de Ads y CRM, los procesa y calcula metricas d
 go mod tidy
 go run ./cmd
 ```
+
+## Docker
+
+```bash
+docker-compose up --build
+```
+
+## Endpoints
+
 
 ## Endpoints
 
@@ -18,24 +27,10 @@ curl -X POST http://localhost:8080/ingest/run
 curl -X POST "http://localhost:8080/ingest/run?since=2025-08-01"
 ```
 
-Respuesta:
-```json
-{"status":"ETL completed"}
-```
-
 ### Ver metricas
 ```bash
 curl http://localhost:8080/metrics
 ```
-
-## Lo que hace
-
-- ETL completo con descarga de Ads/CRM
-- Filtrado por fecha con parametro `since`
-- Reintentos automaticos con backoff
-- Idempotencia (no duplica datos)
-- Calculo de metricas: CPC, CPA, CVR, ROAS
-- Normalizacion de datos y UTMs
 
 ## Documentacion API
 

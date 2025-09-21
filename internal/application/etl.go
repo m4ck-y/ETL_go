@@ -9,7 +9,6 @@ import (
 	"github.com/m4ck-y/ETL_go/internal/pkg/logger"
 )
 
-// processAdsMetrics procesa métricas de anuncios
 func processAdsMetrics(ads []models.AdRecord, sinceDate *time.Time, metrics map[models.UTMKey]models.AggregatedMetrics) {
 	for _, ad := range ads {
 		if !isRecordInDateRange(ad.Date, sinceDate) {
@@ -24,7 +23,6 @@ func processAdsMetrics(ads []models.AdRecord, sinceDate *time.Time, metrics map[
 	}
 }
 
-// processCRMMetrics procesa métricas de CRM
 func processCRMMetrics(crms []models.CRMRecord, sinceDate *time.Time, metrics map[models.UTMKey]models.AggregatedMetrics) {
 	for _, crm := range crms {
 		if !isRecordInDateRange(crm.CreatedAt, sinceDate) {
@@ -34,7 +32,6 @@ func processCRMMetrics(crms []models.CRMRecord, sinceDate *time.Time, metrics ma
 		key := BuildUTMKey(crm.UTMCampaign, crm.UTMSource, crm.UTMMedium)
 		m := metrics[key]
 
-		// Contar por stage
 		stage := strings.ToLower(crm.Stage)
 		switch stage {
 		case "lead":
@@ -50,14 +47,12 @@ func processCRMMetrics(crms []models.CRMRecord, sinceDate *time.Time, metrics ma
 }
 
 func RunETL(adsURL, crmURL string, sinceDate *time.Time) (map[models.UTMKey]models.AggregatedMetrics, error) {
-	// Logging del inicio del proceso
 	logger.GlobalLogger.Info("Iniciando proceso ETL", "system", map[string]interface{}{
 		"ads_url":    adsURL,
 		"crm_url":    crmURL,
 		"since_date": sinceDate,
 	})
 
-	// Obtener datos de ambas fuentes
 	ads, err := fetchAds(adsURL, sinceDate)
 	if err != nil {
 		logger.GlobalLogger.Error("Error obteniendo datos de ads", "system", map[string]interface{}{
@@ -76,14 +71,11 @@ func RunETL(adsURL, crmURL string, sinceDate *time.Time) (map[models.UTMKey]mode
 		return nil, fmt.Errorf("error obteniendo datos de crm: %w", err)
 	}
 
-	// Inicializar mapa de métricas
 	metrics := make(map[models.UTMKey]models.AggregatedMetrics)
 
-	// Procesar métricas de ads y crm
 	processAdsMetrics(ads, sinceDate, metrics)
 	processCRMMetrics(crms, sinceDate, metrics)
 
-	// Logging del resultado
 	logger.GlobalLogger.Info("ETL completado exitosamente", "system", map[string]interface{}{
 		"ads_records":        len(ads),
 		"crm_records":        len(crms),
@@ -107,10 +99,6 @@ func fetchAds(url string, sinceDate *time.Time) ([]models.AdRecord, error) {
 	}
 
 	records := response.External.Ads.Performance
-	logger.GlobalLogger.Info("Datos de ads obtenidos", "system", map[string]interface{}{
-		"url":     url,
-		"records": len(records),
-	})
 	return records, nil
 }
 
@@ -128,9 +116,5 @@ func fetchCRM(url string, sinceDate *time.Time) ([]models.CRMRecord, error) {
 	}
 
 	records := response.External.CRM.Opportunities
-	logger.GlobalLogger.Info("Datos de crm obtenidos", "system", map[string]interface{}{
-		"url":     url,
-		"records": len(records),
-	})
 	return records, nil
 }
